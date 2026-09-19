@@ -1,0 +1,4 @@
+Item,Price,Qty,Total,Discounted
+Widget,10,5,=B2*C2,=D2*0.9
+Gizmo,5,2,=B3*C3,=IF(NOW()>TODAY(),D3*0.8,D3)
+Bad,1,1,=B4*C4,=D4/0
