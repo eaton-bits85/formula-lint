@@ -1,9 +1,9 @@
 # formula-lint
 
-A linter for spreadsheet formulas. It reads a CSV file where formula cells
-contain the formula text itself (starting with `=`) rather than the computed
-value, and reports problems with a file, row, and cell reference so you can
-jump straight to the offending cell.
+A linter for spreadsheet formulas. It reads a `.xlsx` workbook directly, or a
+CSV file where formula cells contain the formula text itself (starting with
+`=`) rather than the computed value, and reports problems with a file, row,
+and cell reference so you can jump straight to the offending cell.
 
 ## Why
 
@@ -29,17 +29,22 @@ findings you can act on before that happens.
 
 ## Input format
 
-Most "export to CSV" features in Excel and Google Sheets write computed
-values, not formulas, so you'll need formula text in the CSV to lint
-anything. Two easy ways to get that:
+`xlint` picks the reader based on the file extension.
 
-- In Google Sheets, wrap the range you want to check in `=FORMULATEXT(A1)`
-  in a scratch column, then export that.
-- Read the workbook with a small script (Python's `openpyxl` with
-  `data_only=False`, for example) and write formula-bearing cells straight
-  into a CSV.
-
-A native `.xlsx` reader is on the roadmap so this step goes away; see below.
+- `.xlsx` is read natively: the workbook's sheet XML is parsed straight out
+  of the zip archive, no export step needed. Cells that are the slave half
+  of a shared-formula group (the ones Excel writes without their own
+  formula text, just a pointer to a master cell) are skipped rather than
+  guessed at.
+- `.csv` (or anything else) is read as CSV, where formula cells must
+  contain the formula text itself (starting with `=`) rather than the
+  computed value. Most "export to CSV" features write computed values, so
+  producing this input usually means either:
+  - wrapping the range you want to check in `=FORMULATEXT(A1)` in a scratch
+    column in Google Sheets before exporting, or
+  - reading the workbook with a small script (Python's `openpyxl` with
+    `data_only=False`, for example) and writing formula-bearing cells
+    straight into a CSV.
 
 ## Usage
 
@@ -48,6 +53,9 @@ $ go run . testdata/sample.csv
 testdata/sample.csv:3: E3: uses volatile function NOW, recalculates on every change (volatile)
 testdata/sample.csv:3: E3: uses volatile function TODAY, recalculates on every change (volatile)
 testdata/sample.csv:4: E4: divides by a literal zero (div-by-zero)
+
+$ go run . path/to/workbook.xlsx
+path/to/workbook.xlsx:3: Sheet1!E3: uses volatile function NOW, recalculates on every change (volatile)
 ```
 
 Exit code is `1` if any findings were reported, `0` otherwise, so it can be
@@ -63,5 +71,5 @@ $ ./xlint path/to/sheet.csv
 
 ## Status
 
-Early skeleton. Four checks, one input format. See the checks list above
-for what exists today.
+Early skeleton. Four checks, two input formats (CSV and native `.xlsx`).
+See the checks list above for what exists today.
